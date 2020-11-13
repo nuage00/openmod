@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,6 +16,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Resolver;
 using NuGet.Versioning;
 
+//todo rework -> caching, parallel, optimization
 namespace OpenMod.NuGet
 {
     public class NuGetPackageManager : IDisposable
@@ -607,28 +607,44 @@ namespace OpenMod.NuGet
 
         private Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
         {
-            var name = GetVersionIndependentName(args.Name, out _);
-            if (m_ResolveCache.ContainsKey(name))
+            var expectedName = GetVersionIndependentName(args.Name, out _);
+            if (m_ResolveCache.TryGetValue(expectedName, out var assembly))
             {
-                return m_ResolveCache[name];
+                return assembly;
             }
 
-            var matchingAssemblies =
-                m_LoadedPackageAssemblies.Values.SelectMany(d => d)
-                    .Where(d => d.Assembly.IsAlive && d.AssemblyName.Equals(name, StringComparison.OrdinalIgnoreCase))
-                    .OrderByDescending(d => d.Version);
-
-            var result = (Assembly)matchingAssemblies.FirstOrDefault()?.Assembly.Target;
-            if (result != null)
+            Version higestVersion = null;
+            foreach (var assembliesCollection in m_LoadedPackageAssemblies.Values)
             {
-                m_ResolveCache.Add(name, result);
+                foreach (var nuGetAssembly in assembliesCollection)
+                {
+                    var reference = nuGetAssembly.Assembly;
+                    if (!reference.IsAlive || !nuGetAssembly.AssemblyName.Equals(expectedName))
+                    {
+                        continue;
+                    }
+
+                    var currentVersion = nuGetAssembly.Version;
+                    if (higestVersion != null && higestVersion > currentVersion)
+                    {
+                        continue;
+                    }
+
+                    assembly = (Assembly)reference.Target;
+                    higestVersion = currentVersion;
+                }
             }
 
-            m_Logger.LogDebug(result == null
+            if (assembly != null)
+            {
+                m_ResolveCache.Add(expectedName, assembly);
+            }
+
+            m_Logger.LogDebug(assembly == null
                 ? $"Failed to resolve {args.Name}"
-                : $"Resolved assembly from NuGet: {args.Name} @ v{result.GetName().Version}");
+                : $"Resolved assembly from NuGet: {args.Name} @ v{higestVersion}");
 
-            return result;
+            return assembly;
         }
 
         protected static string GetVersionIndependentName(string fullAssemblyName, out string extractedVersion)
