@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using HarmonyLib;
 using SDG.Framework.Modules;
-using SDG.Unturned;
 
 namespace OpenMod.Unturned.Module.Shared
 {
@@ -151,23 +150,38 @@ namespace OpenMod.Unturned.Module.Shared
         {
             AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
             {
-                var name = GetVersionIndependentName(args.Name, out _);
-                if (m_ResolvedAssemblies.ContainsKey(name))
+                var expectedName = GetVersionIndependentName(args.Name, out _);
+                if (m_ResolvedAssemblies.TryGetValue(expectedName, out var assembly))
                 {
-                    return m_ResolvedAssemblies[name];
+                    return assembly;
                 }
 
-                var assemblies = m_LoadedAssemblies.Values
-                    .Where(d => GetVersionIndependentName(d.FullName, out _).Equals(name))
-                    .OrderByDescending(d => d.GetName().Version);
-                
-                var match= assemblies.FirstOrDefault();
-                if (match != null)
+                //assembly value here will be null since it is the default value of it
+                Version higestVersion = null;
+                foreach (var currentAssembly in m_LoadedAssemblies.Values)
                 {
-                    m_ResolvedAssemblies.Add(name, match);
+                    var assemblyName = GetVersionIndependentName(currentAssembly.FullName, out _);
+                    if (!assemblyName.Equals(expectedName))
+                    {
+                        continue;
+                    }
+
+                    var currentVersion = currentAssembly.GetName().Version;
+                    if (higestVersion != null && higestVersion > currentVersion)
+                    {
+                        continue;
+                    }
+
+                    assembly = currentAssembly;
+                    higestVersion = currentVersion;
                 }
 
-                return match;
+                if (assembly != null)
+                {
+                    m_ResolvedAssemblies.Add(expectedName, assembly);
+                }
+
+                return assembly;
             };
         }
 
@@ -184,27 +198,32 @@ namespace OpenMod.Unturned.Module.Shared
 
         private bool CertificateValidationWorkaroundCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            bool isOk = true;
             // If there are errors in the certificate chain, look at each error to determine the cause.
-            if (sslPolicyErrors != SslPolicyErrors.None)
+            if (sslPolicyErrors == SslPolicyErrors.None)
             {
-                foreach (X509ChainStatus chainStatus in chain.ChainStatus)
-                {
-                    if (chainStatus.Status != X509ChainStatusFlags.RevocationStatusUnknown)
-                    {
-                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
-                        chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-                        chain.ChainPolicy.UrlRetrievalTimeout = new TimeSpan(0, 1, 0);
-                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                        bool chainIsValid = chain.Build((X509Certificate2)certificate);
-                        if (!chainIsValid)
-                        {
-                            isOk = false;
-                        }
-                    }
-                }
+                return true;
             }
-            return isOk;
+
+            foreach (var chainStatus in chain.ChainStatus)
+            {
+                if (chainStatus.Status == X509ChainStatusFlags.RevocationStatusUnknown)
+                {
+                    continue;
+                }
+
+                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                chain.ChainPolicy.UrlRetrievalTimeout = new TimeSpan(hours: 0, minutes: 1, seconds: 0);
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                if (chain.Build((X509Certificate2) certificate))
+                {
+                    continue;
+                }
+                
+                return false;
+            }
+
+            return true;
         }
 
         private static readonly Regex s_VersionRegex = new Regex("Version=(?<version>.+?), ", RegexOptions.Compiled);
@@ -221,7 +240,7 @@ namespace OpenMod.Unturned.Module.Shared
             //Load the dll from the same directory as this assembly
             var dllFullPath = Path.GetFullPath(Path.Combine(baseDirectory, dllName));
 
-            if (string.Equals(baseDirectory, dllFullPath, StringComparison.OrdinalIgnoreCase))
+            if (baseDirectory.Equals(dllFullPath, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
