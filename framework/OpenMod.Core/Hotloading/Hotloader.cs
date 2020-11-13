@@ -20,29 +20,41 @@ namespace OpenMod.Core.Hotloading
 
         private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
         {
-            Assembly match = null;
-            var name = ReflectionExtensions.GetVersionIndependentName(args.Name);
-
-            foreach (var kv in s_Assemblies)
+            var expectedName = ReflectionExtensions.GetVersionIndependentName(args.Name, out _);
+            if (s_Assemblies.TryGetValue(expectedName, out var assembly))
             {
-                if (kv.Key.Equals(args.Name))
-                {
-                    return kv.Value;
-                }
-
-                if (ReflectionExtensions.GetVersionIndependentName(kv.Key).Equals(name))
-                {
-                    match = kv.Value;
-                }
+                return assembly;
             }
 
-            return match;
+            Version higestVersion = null;
+            foreach (var currentAssembly in s_Assemblies.Values)
+            {
+                var assemblyName = ReflectionExtensions.GetVersionIndependentName(currentAssembly.FullName, out _);
+                if (!assemblyName.Equals(expectedName))
+                {
+                    continue;
+                }
+
+                var currentVersion = currentAssembly.GetName().Version;
+                if (higestVersion != null && higestVersion > currentVersion)
+                {
+                    continue;
+                }
+
+                assembly = currentAssembly;
+                higestVersion = currentVersion;
+            }
+
+            if (assembly != null)
+            {
+                s_Assemblies.Add(expectedName, assembly);
+            }
+
+            return assembly;
         }
 
         public static Assembly LoadAssembly(byte[] assemblyData)
         {
-            return Assembly.Load(assemblyData);
-            /*
             using var input = new MemoryStream(assemblyData, writable: false);
             using var output = new MemoryStream();
 
@@ -50,27 +62,22 @@ namespace OpenMod.Core.Hotloading
             var module = ModuleDefMD.Load(input, modCtx);
 
             var realFullname = module.Assembly.FullName;
+            s_Assemblies.Remove(realFullname);
 
-            if (s_Assemblies.ContainsKey(realFullname))
-            {
-                s_Assemblies.Remove(realFullname);
-            }
-
-            var guid = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 6);
+            var guid = Guid.NewGuid().ToString("N").Substring(startIndex: 0, length: 6); //Format "N" already removes '-' from guid
             var name = $"{module.Assembly.Name}-{guid}";
 
-            module.Assembly.Name = name; 
+            module.Assembly.Name = name;
             module.Assembly.PublicKey = null;
             module.Assembly.HasPublicKey = false;
 
             module.Write(output);
-            output.Seek(offset: 0, SeekOrigin.Begin);
+            //output.Seek(offset: 0, SeekOrigin.Begin); -> MemoryStream.ToArray does not need seek
 
             var newAssemblyData = output.ToArray();
             var assembly = Assembly.Load(newAssemblyData);
             s_Assemblies.Add(realFullname, assembly);
             return assembly;
-            */
         }
 
         public static void Remove(Assembly assembly)
@@ -93,12 +100,9 @@ namespace OpenMod.Core.Hotloading
 
         public static AssemblyName GetRealName(Assembly assembly)
         {
-            foreach (var kv in s_Assemblies)
+            foreach (var kv in s_Assemblies.Where(kv => kv.Value == assembly))
             {
-                if (kv.Value == assembly)
-                {
-                    return new AssemblyName(kv.Key);
-                }
+                return new AssemblyName(kv.Key);
             }
 
             return assembly.GetName();
