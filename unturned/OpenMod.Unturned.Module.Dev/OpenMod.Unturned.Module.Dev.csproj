@@ -6,6 +6,7 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\props\SharedProjectProps.props" />
 
   <ItemGroup>
+    <ProjectReference Include="..\..\framework\OpenMod.Runtime\OpenMod.Runtime.csproj" />
     <ProjectReference Include="..\OpenMod.Unturned.Module.Shared\OpenMod.Unturned.Module.Shared.csproj" />
     <ProjectReference Include="..\OpenMod.Unturned\OpenMod.Unturned.csproj" />
   </ItemGroup>

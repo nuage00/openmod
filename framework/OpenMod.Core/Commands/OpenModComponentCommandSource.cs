@@ -5,7 +5,6 @@ using Autofac.Util;
 using Microsoft.Extensions.Logging;
 using OpenMod.API;
 using OpenMod.API.Commands;
-using OpenMod.API.Permissions;
 using OpenMod.Core.Helpers;
 using OpenMod.Core.Ioc;
 

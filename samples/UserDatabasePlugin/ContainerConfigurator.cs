@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using Microsoft.Extensions.Configuration;
 using OpenMod.API.Plugins;
 using OpenMod.EntityFrameworkCore.Extensions;
 using UserDatabasePlugin.Database;

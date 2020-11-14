@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.10" />
     <PackageReference Include="NetEscapades.Configuration.Yaml" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="3.1.10" />
@@ -42,7 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OpenMod.Analyzers\OpenMod.Analyzers.csproj" />
     <ProjectReference Include="..\OpenMod.API\OpenMod.API.csproj" />
     <ProjectReference Include="..\OpenMod.NuGet\OpenMod.NuGet.csproj" />
   </ItemGroup>
