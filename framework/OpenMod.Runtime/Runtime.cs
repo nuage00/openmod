@@ -19,14 +19,12 @@ using OpenMod.API.Permissions;
 using OpenMod.API.Persistence;
 using OpenMod.Core.Helpers;
 using OpenMod.Core.Hotloading;
-using OpenMod.Core.Ioc;
 using OpenMod.Core.Permissions;
 using OpenMod.Core.Plugins.NuGet;
 using OpenMod.NuGet;
 using Semver;
 using Serilog;
 using Serilog.Extensions.Logging;
-using AssemblyExtensions = Autofac.Util.AssemblyExtensions;
 
 #pragma warning disable CS4014
 
@@ -83,7 +81,7 @@ namespace OpenMod.Runtime
                 var openModCoreAssembly = typeof(AsyncHelper).Assembly;
                 if (!openModHostAssemblies.Contains(openModCoreAssembly))
                 {
-                    openModHostAssemblies.Insert(0, openModCoreAssembly);
+                    openModHostAssemblies.Insert(index: 0, openModCoreAssembly);
                 }
 
                 Type hostInformationType = null;
@@ -96,8 +94,7 @@ namespace OpenMod.Runtime
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("failed to get hostInformationType");
-                    Console.WriteLine(ex);
+                    Console.WriteLine($"Fail to get HostInformation: {ex}");
                     if (ex.InnerException != null)
                     {
                         Console.WriteLine(ex.InnerException);
