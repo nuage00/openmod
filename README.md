@@ -31,11 +31,7 @@ Currently Unturned is the only supported game. More games might follow in the fu
 
 - RocketMod 4 | Unturned 3
 
- A RocketMod 4 bridge has been made, which allows to run legacy RM4 plugins.
-     The configs for RM4 are yet to be decided to be separate, or to be proxied.
-
- A RocketMod 4 Permissions Link has been made too, which allows to use RM4 permissions.
-     The permissions for RM4 are yet to be decided to be separate, or to be proxied.
+  A RocketMod 4 bridge and Permissions Link has been made, which allows to run legacy RM4 plugins and which allows to use RM4 permissions. The configs for RM4 are yet to be decided to be separate, or to be proxied.
 
 ## Build Status
 | **framework**                                                                                                                                                                          | standalone                                                                                                                                                                       | unityengine                                                                                                                                                                         | unturned                                                                                                                                                                                        |
