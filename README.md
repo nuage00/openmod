@@ -27,11 +27,7 @@ If you want to make plugins for OpenMod, you can get started by reading the [Mak
 ## Supported Games
 Currently Unturned is the only supported game. More games might follow in the future.
 
-## Supported Modules
-
-- RocketMod 4 | Unturned 3
-
-  A RocketMod 4 bridge and Permissions Link has been made, which allows to run legacy RM4 plugins and which allows to use RM4 permissions. The configs for RM4 are yet to be decided to be separate, or to be proxied.
+Openmod supports RocketMod4, they can work together without any plugins. You need to put them to Modules directory.
 
 ## Build Status
 | **framework**                                                                                                                                                                          | standalone                                                                                                                                                                       | unityengine                                                                                                                                                                         | unturned                                                                                                                                                                                        |
